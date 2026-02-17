@@ -14,15 +14,33 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const donation = {
-    id: Date.now().toString(),
-    nama: req.body.supporter_name || "Anonymous",
-    amount: Number(req.body.amount) || 0,
-    message: req.body.message || "",
-    timestamp: new Date().toISOString()
-  };
+  try {
 
-  await redis.lpush("donations", JSON.stringify(donation));
+    // DEBUG (boleh dihapus nanti)
+    console.log("Incoming Webhook Body:", JSON.stringify(req.body, null, 2));
 
-  return res.status(200).json({ success: true });
+    // Ambil nama dari berbagai kemungkinan field
+    const rawName =
+      req.body.supporter_name ||
+      req.body.name ||
+      req.body.donor_name ||
+      (req.body.data && req.body.data.supporter_name) ||
+      (req.body.data && req.body.data.name);
+
+    const donation = {
+      id: Date.now().toString(),
+      nama: rawName && rawName.trim() !== "" ? rawName : "Anonymous",
+      amount: Number(req.body.amount) || 0,
+      message: req.body.message || "",
+      timestamp: new Date().toISOString()
+    };
+
+    await redis.lpush("donations", JSON.stringify(donation));
+
+    return res.status(200).json({ success: true });
+
+  } catch (error) {
+    console.error("Webhook Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
