@@ -1,27 +1,20 @@
-import fs from "fs";
+import Redis from "ioredis";
 
-const filePath = "/tmp/donations.json";
+const redis = new Redis(process.env.REDIS_URL);
 
 export default async function handler(req, res) {
 
   if (req.method === "POST") {
 
-    console.log("BODY MASUK:", req.body);
-
-    let donations = [];
-
-    if (fs.existsSync(filePath)) {
-      const fileData = fs.readFileSync(filePath, "utf8");
-      donations = JSON.parse(fileData || "[]");
-    }
-
-    // simpan apa pun yang masuk
-    donations.push({
-      raw: req.body,
+    const donation = {
+      id: Date.now().toString(),
+      nama: req.body.supporter_name || "Anonymous",
+      amount: Number(req.body.amount) || 0,
+      message: req.body.message || "",
       timestamp: new Date().toISOString()
-    });
+    };
 
-    fs.writeFileSync(filePath, JSON.stringify(donations));
+    await redis.lpush("donations", JSON.stringify(donation));
 
     return res.status(200).json({ success: true });
   }
