@@ -1,19 +1,15 @@
-import fs from "fs";
+import Redis from "ioredis";
 
-const filePath = "/tmp/donations.json";
+const redis = new Redis(process.env.REDIS_URL);
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
 
-  let donations = [];
+  const donations = await redis.lrange("donations", 0, -1);
 
-  if (fs.existsSync(filePath)) {
-    const fileData = fs.readFileSync(filePath, "utf8");
-    donations = JSON.parse(fileData || "[]");
-    fs.writeFileSync(filePath, "[]"); // reset setelah diambil
-  }
+  await redis.del("donations");
 
   res.status(200).json({
     success: true,
-    donations: donations
+    donations: donations.map(d => JSON.parse(d))
   });
 }
