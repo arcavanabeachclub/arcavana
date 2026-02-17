@@ -1,10 +1,12 @@
 import fs from "fs";
-import path from "path";
 
 const filePath = "/tmp/donations.json";
 
 export default async function handler(req, res) {
+
   if (req.method === "POST") {
+
+    console.log("BODY MASUK:", req.body);
 
     let donations = [];
 
@@ -13,15 +15,11 @@ export default async function handler(req, res) {
       donations = JSON.parse(fileData || "[]");
     }
 
-    const newDonation = {
-      id: Date.now().toString(),
-      nama: req.body.supporter_name || "Anonymous",
-      amount: Number(req.body.amount) || 0,
-      message: req.body.message || "",
+    // simpan apa pun yang masuk
+    donations.push({
+      raw: req.body,
       timestamp: new Date().toISOString()
-    };
-
-    donations.push(newDonation);
+    });
 
     fs.writeFileSync(filePath, JSON.stringify(donations));
 
