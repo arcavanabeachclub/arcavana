@@ -1,15 +1,19 @@
-let donations = global.donations || [];
-global.donations = donations;
+import fs from "fs";
+
+const filePath = "/tmp/donations.json";
 
 export default function handler(req, res) {
 
-  const dataToSend = [...donations];
+  let donations = [];
 
-  // kosongkan setelah dikirim
-  donations.length = 0;
+  if (fs.existsSync(filePath)) {
+    const fileData = fs.readFileSync(filePath, "utf8");
+    donations = JSON.parse(fileData || "[]");
+    fs.writeFileSync(filePath, "[]"); // reset setelah diambil
+  }
 
   res.status(200).json({
     success: true,
-    donations: dataToSend
+    donations: donations
   });
 }
