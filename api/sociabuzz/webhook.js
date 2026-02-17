@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const secret = req.query.secret;
+  const { secret } = req.query;
 
   if (secret !== process.env.WEBHOOK_SECRET) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -16,14 +16,20 @@ export default async function handler(req, res) {
 
   try {
 
-    console.log("Incoming Webhook Body:", req.body);
+    console.log("Incoming Webhook Body:", JSON.stringify(req.body, null, 2));
+
+    // ===============================
+    // AMBIL DATA DARI SOCIABUZZ
+    // ===============================
 
     const rawName =
+      req.body.supporter ||
       req.body.supporter_name ||
       req.body.name ||
       req.body.donor_name ||
       req.body?.data?.supporter_name ||
-      req.body?.data?.name;
+      req.body?.data?.name ||
+      "";
 
     const amount =
       req.body.amount ||
@@ -37,11 +43,15 @@ export default async function handler(req, res) {
 
     const donation = {
       id: Date.now().toString(),
-      nama: rawName && rawName.trim() !== "" ? rawName : "Anonymous",
+      nama: rawName.trim() !== "" ? rawName : "Anonymous",
       amount: Number(amount),
-      message,
+      message: message,
       timestamp: new Date().toISOString()
     };
+
+    // ===============================
+    // SIMPAN KE REDIS
+    // ===============================
 
     await redis.lpush("donations", JSON.stringify(donation));
 
