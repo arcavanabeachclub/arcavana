@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { secret } = req.query;
+  const secret = req.query.secret;
 
   if (secret !== process.env.WEBHOOK_SECRET) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -16,22 +16,30 @@ export default async function handler(req, res) {
 
   try {
 
-    // DEBUG (boleh dihapus nanti)
-    console.log("Incoming Webhook Body:", JSON.stringify(req.body, null, 2));
+    console.log("Incoming Webhook Body:", req.body);
 
-    // Ambil nama dari berbagai kemungkinan field
     const rawName =
       req.body.supporter_name ||
       req.body.name ||
       req.body.donor_name ||
-      (req.body.data && req.body.data.supporter_name) ||
-      (req.body.data && req.body.data.name);
+      req.body?.data?.supporter_name ||
+      req.body?.data?.name;
+
+    const amount =
+      req.body.amount ||
+      req.body?.data?.amount ||
+      0;
+
+    const message =
+      req.body.message ||
+      req.body?.data?.message ||
+      "";
 
     const donation = {
       id: Date.now().toString(),
       nama: rawName && rawName.trim() !== "" ? rawName : "Anonymous",
-      amount: Number(req.body.amount) || 0,
-      message: req.body.message || "",
+      amount: Number(amount),
+      message,
       timestamp: new Date().toISOString()
     };
 
